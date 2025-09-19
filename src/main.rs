@@ -1,4 +1,3 @@
-use chrono::Utc;
 use clap::error::ErrorKind::InvalidValue;
 use clap::{ArgGroup, Error, Parser};
 use inference_benchmarker::{run, RunConfiguration, TokenizeOptions};

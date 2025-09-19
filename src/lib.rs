@@ -156,19 +156,36 @@ pub async fn run(mut run_config: RunConfiguration, stop_sender: Sender<()>) -> a
         }
     });
 
-    // download prompts dataset
-    info!("Downloading dataset");
-    let _ = tx.send(Event::Message(MessageEvent {
-        message: "Downloading dataset".to_string(),
-        timestamp: chrono::Utc::now(),
-        level: Level::Info,
-    }));
-    let filepath = requests::ConversationTextRequestGenerator::download_dataset(
-        run_config.dataset,
-        run_config.dataset_file,
-        run_config.hf_token.clone(),
-    )
-    .expect("Can't download dataset");
+    // load prompts dataset from local path if exists, otherwise download
+    let local_path = Path::new(&run_config.dataset_file);
+    let filepath = if local_path.exists() {
+        info!(
+            "Loading dataset from local file: {}",
+            local_path.display()
+        );
+        let _ = tx.send(Event::Message(MessageEvent {
+            message: format!(
+                "Loading dataset from file: {}",
+                local_path.display()
+            ),
+            timestamp: chrono::Utc::now(),
+            level: Level::Info,
+        }));
+        local_path.to_path_buf()
+    } else {
+        info!("Downloading dataset");
+        let _ = tx.send(Event::Message(MessageEvent {
+            message: "Downloading dataset".to_string(),
+            timestamp: chrono::Utc::now(),
+            level: Level::Info,
+        }));
+        requests::ConversationTextRequestGenerator::download_dataset(
+            run_config.dataset,
+            run_config.dataset_file,
+            run_config.hf_token.clone(),
+        )
+        .expect("Can't download dataset")
+    };
     let requests = requests::ConversationTextRequestGenerator::load(
         filepath,
         run_config.tokenizer_name.clone(),
